@@ -8,6 +8,7 @@ urlpatterns = [
     
     # API endpoints
     path('api/users/', include('users.urls')),
+    path('api/', include('courses.urls')),
 ]
 
 # Media files (development)
