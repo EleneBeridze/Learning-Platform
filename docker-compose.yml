@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=courses_lab_db
+      - POSTGRES_USER=courses_user
+      - POSTGRES_PASSWORD=courses_password_2024
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U courses_user -d courses_lab_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Django Web Application
+  web:
+    build: .
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn --bind 0.0.0.0:8000 config.wsgi:application"
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=False
+      - SECRET_KEY=django-insecure-docker-secret-key-change-in-production
+      - DATABASE_URL=postgresql://courses_user:courses_password_2024@db:5432/courses_lab_db
+      - ALLOWED_HOSTS=localhost,127.0.0.1
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
